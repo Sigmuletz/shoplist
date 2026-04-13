@@ -93,7 +93,7 @@ function SectionLabel({ children }) {
   )
 }
 
-export default function SettingsView({ user, profile, catalog, updateTelegramChatId }) {
+export default function SettingsView({ user, profile, members, catalog, updateTelegramChatId }) {
   const { signOut, setPassword } = useAuth()
   const [signingOut, setSigningOut] = useState(false)
 
@@ -114,12 +114,42 @@ export default function SettingsView({ user, profile, catalog, updateTelegramCha
         {/* Family */}
         <section>
           <SectionLabel>Family</SectionLabel>
-          <div className="card">
-            <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 2 }}>Family group</p>
-            <p style={{ fontWeight: 600, fontSize: 17 }}>{profile?.families?.name ?? '—'}</p>
-            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 'var(--sp-1)' }}>
-              Catalog and lists shared with all family members.
-            </p>
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
+            <div>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 2 }}>Family group</p>
+              <p style={{ fontWeight: 600, fontSize: 17 }}>{profile?.families?.name ?? '—'}</p>
+            </div>
+            {members.length > 0 && (
+              <div>
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 'var(--sp-2)' }}>Members</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  {members.map(m => (
+                    <div key={m.id} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 'var(--sp-2)',
+                      padding: 'var(--sp-1) 0',
+                      borderBottom: '1px solid var(--border-subtle)',
+                      fontSize: 14,
+                    }}>
+                      <span style={{
+                        width: 28, height: 28, borderRadius: '50%',
+                        background: 'var(--bg-elevated)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)',
+                        flexShrink: 0,
+                      }}>
+                        {(m.email?.[0] ?? '?').toUpperCase()}
+                      </span>
+                      <span style={{ color: m.id === user.id ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                        {m.email ?? m.id}
+                        {m.id === user.id && <span style={{ color: 'var(--text-muted)', fontSize: 12, marginLeft: 6 }}>you</span>}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </section>
 

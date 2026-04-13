@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../hooks/useAuth'
 
 export default function FamilyPicker({ setFamily }) {
+  const { signOut } = useAuth()
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -80,6 +82,21 @@ export default function FamilyPicker({ setFamily }) {
             {loading ? <span className="spinner" /> : 'Continue'}
           </button>
         </form>
+
+        <button
+          onClick={signOut}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--text-muted)',
+            fontSize: 13,
+            cursor: 'pointer',
+            padding: 'var(--sp-2) 0',
+            alignSelf: 'center',
+          }}
+        >
+          Sign out
+        </button>
       </div>
     </div>
   )
