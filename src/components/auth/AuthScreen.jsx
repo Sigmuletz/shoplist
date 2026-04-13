@@ -2,18 +2,33 @@ import { useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 
 export default function AuthScreen() {
-  const { signInWithEmail } = useAuth()
+  const { signInWithPassword, signInWithMagicLink } = useAuth()
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [mode, setMode] = useState('password') // 'password' | 'magic'
   const [sent, setSent] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  async function handleSubmit(e) {
+  async function handlePasswordLogin(e) {
     e.preventDefault()
     setError(null)
     setLoading(true)
     try {
-      await signInWithEmail(email)
+      await signInWithPassword(email, password)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleMagicLink(e) {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+    try {
+      await signInWithMagicLink(email)
       setSent(true)
     } catch (err) {
       setError(err.message)
@@ -55,15 +70,62 @@ export default function AuthScreen() {
             <button
               className="btn btn-ghost"
               style={{ marginTop: 'var(--sp-5)', width: '100%' }}
-              onClick={() => setSent(false)}
+              onClick={() => { setSent(false); setMode('password') }}
             >
-              Use different email
+              Back to sign in
             </button>
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
+        ) : mode === 'password' ? (
+          <form onSubmit={handlePasswordLogin} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
             <div>
-              <label className="label">Email address</label>
+              <label className="label">Email</label>
+              <input
+                className="input"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="label">Password</label>
+              <input
+                className="input"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+              />
+            </div>
+
+            {error && <p style={{ color: 'var(--danger)', fontSize: 13 }}>{error}</p>}
+
+            <button
+              className="btn btn-primary"
+              type="submit"
+              disabled={loading || !email || !password}
+              style={{ width: '100%', marginTop: 'var(--sp-1)' }}
+            >
+              {loading ? <span className="spinner" /> : 'Sign in'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setError(null); setMode('magic') }}
+              style={{ color: 'var(--text-secondary)', fontSize: 13, textAlign: 'center', padding: 'var(--sp-2)' }}
+            >
+              Sign in with magic link instead
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleMagicLink} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
+            <div>
+              <label className="label">Email</label>
               <input
                 className="input"
                 type="email"
@@ -76,9 +138,7 @@ export default function AuthScreen() {
               />
             </div>
 
-            {error && (
-              <p style={{ color: 'var(--danger)', fontSize: 13 }}>{error}</p>
-            )}
+            {error && <p style={{ color: 'var(--danger)', fontSize: 13 }}>{error}</p>}
 
             <button
               className="btn btn-primary"
@@ -87,6 +147,14 @@ export default function AuthScreen() {
               style={{ width: '100%', marginTop: 'var(--sp-1)' }}
             >
               {loading ? <span className="spinner" /> : 'Send magic link'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setError(null); setMode('password') }}
+              style={{ color: 'var(--text-secondary)', fontSize: 13, textAlign: 'center', padding: 'var(--sp-2)' }}
+            >
+              Sign in with password instead
             </button>
           </form>
         )}

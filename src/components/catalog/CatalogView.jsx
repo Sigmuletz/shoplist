@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import Header from '../layout/Header'
 import SearchBar from './SearchBar'
 import CatalogItem from './CatalogItem'
@@ -7,6 +7,12 @@ import AddItemModal from './AddItemModal'
 export default function CatalogView({ catalog, listState }) {
   const [search, setSearch] = useState('')
   const [showModal, setShowModal] = useState(false)
+  const scrollRef = useRef(null)
+
+  async function handleAdd(item) {
+    await catalog.addItem(item)
+    scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   const filtered = catalog.items.filter(item =>
     item.name.toLowerCase().includes(search.toLowerCase())
@@ -31,7 +37,7 @@ export default function CatalogView({ catalog, listState }) {
         <SearchBar value={search} onChange={setSearch} placeholder="Search items…" />
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+      <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
         {catalog.loading ? (
           <div className="empty-state">
             <p style={{ color: 'var(--text-muted)' }}>Loading…</p>
@@ -65,7 +71,7 @@ export default function CatalogView({ catalog, listState }) {
 
       {showModal && (
         <AddItemModal
-          onAdd={catalog.addItem}
+          onAdd={handleAdd}
           onClose={() => setShowModal(false)}
         />
       )}
