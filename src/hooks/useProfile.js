@@ -21,19 +21,30 @@ export function useProfile(userId) {
     const { data: { user: authUser } } = await supabase.auth.getUser()
     const email = authUser?.email
 
-    const { data } = await supabase
+    let { data } = await supabase
       .from('profiles')
       .select('*, families(name)')
       .eq('id', userId)
       .maybeSingle()
 
     if (!data) {
-      // New user — create profile row
-      await supabase.from('profiles').insert({ id: userId, email })
-      const profile = { id: userId, family_id: null, telegram_chat_id: null, families: null, email }
-      setProfile(profile)
-      setMembers([])
-    } else {
+      // Profile not visible (new user or RLS issue) — try insert, ignore duplicate key
+      const { error: insertError } = await supabase
+        .from('profiles')
+        .insert({ id: userId, email })
+
+      if (!insertError || insertError.code === '23505') {
+        // Inserted or already existed — fetch again
+        const { data: refetched } = await supabase
+          .from('profiles')
+          .select('*, families(name)')
+          .eq('id', userId)
+          .maybeSingle()
+        data = refetched
+      }
+    }
+
+    if (data) {
       // Sync email if changed
       if (email && data.email !== email) {
         await supabase.from('profiles').update({ email }).eq('id', userId)
@@ -41,6 +52,10 @@ export function useProfile(userId) {
       }
       setProfile(data)
       fetchMembers(data.family_id)
+    } else {
+      // Truly can't read profile — surface minimal state
+      setProfile({ id: userId, family_id: null, telegram_chat_id: null, families: null, email })
+      setMembers([])
     }
   }, [userId, fetchMembers])
 
