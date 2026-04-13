@@ -3,6 +3,7 @@ import Header from '../layout/Header'
 import SearchBar from './SearchBar'
 import AddItemModal from './AddItemModal'
 import BulkAddModal from './BulkAddModal'
+import { CATEGORIES, groupByCategory } from '../../lib/categories'
 
 export default function CatalogView({ catalog, listState }) {
   const [search, setSearch] = useState('')
@@ -11,6 +12,7 @@ export default function CatalogView({ catalog, listState }) {
   const [editMode, setEditMode] = useState(false)
   const [edits, setEdits] = useState({})
   const [saving, setSaving] = useState(false)
+  const [sortBy, setSortBy] = useState('name') // 'name' | 'category'
   const scrollRef = useRef(null)
 
   async function handleAdd(item) {
@@ -21,7 +23,7 @@ export default function CatalogView({ catalog, listState }) {
   function enterEdit() {
     const initial = {}
     catalog.items.forEach(i => {
-      initial[i.id] = { name: i.name, unit: i.unit || '', price: i.price ?? '' }
+      initial[i.id] = { name: i.name, unit: i.unit || '', price: i.price ?? '', category: i.category || '' }
     })
     setEdits(initial)
     setEditMode(true)
@@ -35,9 +37,14 @@ export default function CatalogView({ catalog, listState }) {
       const changed =
         e.name !== item.name ||
         e.unit !== (item.unit || '') ||
-        String(e.price) !== String(item.price ?? '')
+        String(e.price) !== String(item.price ?? '') ||
+        e.category !== (item.category || '')
       if (changed && e.name.trim()) {
-        await catalog.updateItem(item.id, { name: e.name, unit: e.unit, price: e.price !== '' ? e.price : null })
+        await catalog.updateItem(item.id, {
+          name: e.name, unit: e.unit,
+          price: e.price !== '' ? e.price : null,
+          category: e.category || null,
+        })
       }
     }
     setSaving(false)
@@ -54,41 +61,34 @@ export default function CatalogView({ catalog, listState }) {
     setEdits(prev => { const n = { ...prev }; delete n[id]; return n })
   }
 
-  const filtered = editMode
-    ? catalog.items.filter(i => i.name.toLowerCase().includes(search.toLowerCase()))
-    : catalog.items.filter(i => i.name.toLowerCase().includes(search.toLowerCase()))
+  function toggleSort(col) {
+    setSortBy(col)
+  }
+
+  const filtered = catalog.items.filter(i =>
+    i.name.toLowerCase().includes(search.toLowerCase()) ||
+    (i.category || '').toLowerCase().includes(search.toLowerCase())
+  )
+
+  const groups = sortBy === 'category'
+    ? groupByCategory(filtered)
+    : [{ key: null, items: [...filtered].sort((a, b) => a.name.localeCompare(b.name)) }]
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Header title="Catalog" />
 
       {/* Toolbar */}
-      <div style={{
-        display: 'flex',
-        gap: 'var(--sp-2)',
-        padding: 'var(--sp-3)',
-        borderBottom: '1px solid var(--border)',
-      }}>
+      <div style={{ display: 'flex', gap: 'var(--sp-2)', padding: 'var(--sp-3)', borderBottom: '1px solid var(--border)' }}>
         {editMode ? (
-          <button
-            className="btn btn-primary"
-            style={{ flex: 1, height: 40, fontSize: 14 }}
-            onClick={saveEdits}
-            disabled={saving}
-          >
+          <button className="btn btn-primary" style={{ flex: 1, height: 40, fontSize: 14 }} onClick={saveEdits} disabled={saving}>
             {saving ? <span className="spinner" /> : 'Done'}
           </button>
         ) : (
           <>
-            <button className="btn btn-ghost" style={{ flex: 1, height: 40, fontSize: 14 }} onClick={() => setShowBulk(true)}>
-              Bulk add
-            </button>
-            <button className="btn btn-ghost" style={{ flex: 1, height: 40, fontSize: 14 }} onClick={enterEdit}>
-              Edit
-            </button>
-            <button className="btn btn-primary" style={{ flex: 1, height: 40, fontSize: 14 }} onClick={() => setShowAdd(true)}>
-              + Add
-            </button>
+            <button className="btn btn-ghost" style={{ flex: 1, height: 40, fontSize: 14 }} onClick={() => setShowBulk(true)}>Bulk add</button>
+            <button className="btn btn-ghost" style={{ flex: 1, height: 40, fontSize: 14 }} onClick={enterEdit}>Edit</button>
+            <button className="btn btn-primary" style={{ flex: 1, height: 40, fontSize: 14 }} onClick={() => setShowAdd(true)}>+ Add</button>
           </>
         )}
       </div>
@@ -102,9 +102,7 @@ export default function CatalogView({ catalog, listState }) {
           <div className="empty-state"><p style={{ color: 'var(--text-muted)' }}>Loading…</p></div>
         ) : filtered.length === 0 ? (
           <div className="empty-state">
-            {search ? (
-              <p>No items match "{search}"</p>
-            ) : (
+            {search ? <p>No items match "{search}"</p> : (
               <>
                 <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
@@ -122,31 +120,27 @@ export default function CatalogView({ catalog, listState }) {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                <th style={thStyle}>Item</th>
-                <th style={{ ...thStyle, width: 60, textAlign: 'center' }}>Unit</th>
-                <th style={{ ...thStyle, width: 86, textAlign: 'right' }}>Price</th>
-                <th style={{ ...thStyle, width: 36 }} />
+                <Th label="Item" col="name" sortBy={sortBy} onSort={toggleSort} style={{ textAlign: 'left' }} />
+                <Th label="Category" col="category" sortBy={sortBy} onSort={toggleSort} style={{ width: 90, textAlign: 'left' }} />
+                <th style={{ ...thBase, width: editMode ? 52 : 56, textAlign: 'center' }}>Unit</th>
+                <th style={{ ...thBase, width: 80, textAlign: 'right' }}>Price</th>
+                <th style={{ ...thBase, width: 36 }} />
               </tr>
             </thead>
             <tbody>
-              {filtered.map(item =>
-                editMode ? (
-                  <EditRow
-                    key={item.id}
-                    item={item}
-                    values={edits[item.id] || { name: item.name, unit: item.unit || '', price: item.price ?? '' }}
-                    onChange={(field, val) => setField(item.id, field, val)}
-                    onDelete={() => handleDelete(item.id)}
-                  />
-                ) : (
-                  <ViewRow
-                    key={item.id}
-                    item={item}
-                    inList={listState.isInList(item.id)}
-                    onAdd={listState.addItem}
-                  />
-                )
-              )}
+              {groups.map(({ key, items }) => (
+                <GroupRows
+                  key={key ?? '__all'}
+                  groupKey={key}
+                  items={items}
+                  colSpan={5}
+                  editMode={editMode}
+                  edits={edits}
+                  listState={listState}
+                  setField={setField}
+                  handleDelete={handleDelete}
+                />
+              ))}
             </tbody>
           </table>
         )}
@@ -158,14 +152,74 @@ export default function CatalogView({ catalog, listState }) {
   )
 }
 
-const thStyle = {
-  padding: '6px var(--sp-3)',
+function Th({ label, col, sortBy, onSort, style }) {
+  const active = sortBy === col
+  return (
+    <th
+      onClick={() => onSort(col)}
+      style={{
+        ...thBase,
+        cursor: 'pointer',
+        userSelect: 'none',
+        color: active ? 'var(--accent)' : 'var(--text-muted)',
+        ...style,
+      }}
+    >
+      {label}
+      <span style={{ marginLeft: 3, opacity: active ? 1 : 0 }}>▾</span>
+    </th>
+  )
+}
+
+function GroupRows({ groupKey, items, colSpan, editMode, edits, listState, setField, handleDelete }) {
+  return (
+    <>
+      {groupKey && (
+        <tr>
+          <td colSpan={colSpan} style={categoryHeaderStyle}>{groupKey}</td>
+        </tr>
+      )}
+      {items.map(item =>
+        editMode ? (
+          <EditRow
+            key={item.id}
+            item={item}
+            values={edits[item.id] || { name: item.name, unit: item.unit || '', price: item.price ?? '', category: item.category || '' }}
+            onChange={(field, val) => setField(item.id, field, val)}
+            onDelete={() => handleDelete(item.id)}
+          />
+        ) : (
+          <ViewRow
+            key={item.id}
+            item={item}
+            inList={listState.isInList(item.id)}
+            onAdd={listState.addItem}
+          />
+        )
+      )}
+    </>
+  )
+}
+
+const thBase = {
+  padding: '6px var(--sp-2) 6px var(--sp-3)',
   fontSize: 11,
   fontWeight: 600,
   color: 'var(--text-muted)',
   textTransform: 'uppercase',
   letterSpacing: '0.06em',
   textAlign: 'left',
+}
+
+const categoryHeaderStyle = {
+  padding: '5px var(--sp-3) 4px',
+  fontSize: 11,
+  fontWeight: 700,
+  color: 'var(--text-muted)',
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+  background: 'var(--bg-elevated)',
+  borderBottom: '1px solid var(--border)',
 }
 
 const cellInput = {
@@ -190,7 +244,8 @@ function ViewRow({ item, inList, onAdd }) {
       background: inList ? 'var(--accent-dim)' : 'transparent',
       transition: 'background var(--t-fast)',
     }}>
-      <td style={{ padding: '7px var(--sp-3)', fontSize: 14, fontWeight: 500 }}>{item.name}</td>
+      <td style={{ padding: '7px var(--sp-2) 7px var(--sp-3)', fontSize: 14, fontWeight: 500 }}>{item.name}</td>
+      <td style={{ padding: '7px var(--sp-2)', fontSize: 12, color: 'var(--text-muted)' }}>{item.category || '—'}</td>
       <td style={{ padding: '7px var(--sp-2)', fontSize: 13, color: 'var(--text-muted)', textAlign: 'center' }}>{item.unit || '—'}</td>
       <td style={{ padding: '7px var(--sp-3)', fontSize: 13, color: 'var(--text-secondary)', textAlign: 'right' }}>{priceStr}</td>
       <td style={{ padding: '7px var(--sp-2) 7px var(--sp-1)' }}>
@@ -224,11 +279,19 @@ function EditRow({ item, values, onChange, onDelete }) {
   return (
     <tr style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)' }}>
       <td style={{ padding: '5px var(--sp-2) 5px var(--sp-3)' }}>
+        <input style={cellInput} value={values.name} onChange={e => onChange('name', e.target.value)} />
+      </td>
+      <td style={{ padding: '5px var(--sp-1)' }}>
         <input
           style={cellInput}
-          value={values.name}
-          onChange={e => onChange('name', e.target.value)}
+          list="category-options"
+          value={values.category}
+          onChange={e => onChange('category', e.target.value)}
+          placeholder="—"
         />
+        <datalist id="category-options">
+          {CATEGORIES.map(c => <option key={c} value={c} />)}
+        </datalist>
       </td>
       <td style={{ padding: '5px var(--sp-1)' }}>
         <input
@@ -241,9 +304,7 @@ function EditRow({ item, values, onChange, onDelete }) {
       <td style={{ padding: '5px var(--sp-1)' }}>
         <input
           style={{ ...cellInput, textAlign: 'right' }}
-          type="number"
-          min="0"
-          step="0.01"
+          type="number" min="0" step="0.01"
           value={values.price}
           onChange={e => onChange('price', e.target.value)}
           placeholder="—"

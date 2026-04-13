@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { CATEGORIES } from '../../lib/categories'
 
 export default function AddItemModal({ onAdd, onClose }) {
   const [name, setName] = useState('')
   const [unit, setUnit] = useState('')
   const [price, setPrice] = useState('')
+  const [category, setCategory] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -13,7 +15,7 @@ export default function AddItemModal({ onAdd, onClose }) {
     setLoading(true)
     setError(null)
     try {
-      await onAdd({ name, unit, price: price !== '' ? price : null })
+      await onAdd({ name, unit, price: price !== '' ? price : null, category: category || null })
       onClose()
     } catch (err) {
       setError(err.message)
@@ -60,6 +62,36 @@ export default function AddItemModal({ onAdd, onClose }) {
                   placeholder="0.00"
                 />
               </div>
+            </div>
+            <div>
+              <label className="label">Category (optional)</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--sp-1)', marginBottom: 'var(--sp-2)' }}>
+                {CATEGORIES.map(c => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCategory(category === c ? '' : c)}
+                    style={{
+                      padding: '3px 10px',
+                      borderRadius: 99,
+                      fontSize: 13,
+                      border: `1.5px solid ${category === c ? 'var(--accent)' : 'var(--border)'}`,
+                      background: category === c ? 'var(--accent-dim)' : 'transparent',
+                      color: category === c ? 'var(--accent)' : 'var(--text-secondary)',
+                      cursor: 'pointer',
+                      transition: 'all var(--t-fast)',
+                    }}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+              <input
+                className="input"
+                value={category}
+                onChange={e => setCategory(e.target.value)}
+                placeholder="or type custom…"
+              />
             </div>
             {error && <p style={{ color: 'var(--danger)', fontSize: 13 }}>{error}</p>}
           </div>

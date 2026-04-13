@@ -1,14 +1,21 @@
+import { useState } from 'react'
 import Header from '../layout/Header'
 import { UserAvatar } from '../settings/SettingsView'
 import { useShoppingSession } from '../../hooks/useShoppingSession'
+import { groupByCategory } from '../../lib/categories'
 
 const dateFmt = new Intl.DateTimeFormat('ro-RO', { dateStyle: 'medium', timeStyle: 'short' })
 
 export default function ShoppingView({ familyId, profile }) {
   const { list, items, loading, refresh, toggleChecked, resetChecked } = useShoppingSession(familyId, profile?.id)
+  const [sortBy, setSortBy] = useState('name')
 
   const checked = items.filter(i => i.checked).length
   const total = items.length
+
+  const groups = sortBy === 'category'
+    ? groupByCategory(items)
+    : [{ key: null, items: [...items].sort((a, b) => a.item_name.localeCompare(b.item_name)) }]
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -55,19 +62,11 @@ export default function ShoppingView({ familyId, profile }) {
             alignItems: 'center',
             justifyContent: 'space-between',
           }}>
-            <div>
-              <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                {dateFmt.format(new Date(list.sent_at))}
-              </span>
-              <span style={{ fontSize: 13, color: 'var(--text-muted)', marginLeft: 12 }}>
-                {checked}/{total} done
-              </span>
-            </div>
+            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+              {dateFmt.format(new Date(list.sent_at))} · {checked}/{total}
+            </span>
             {checked > 0 && (
-              <button
-                onClick={resetChecked}
-                style={{ fontSize: 12, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
-              >
+              <button onClick={resetChecked} style={{ fontSize: 12, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>
                 Reset
               </button>
             )}
@@ -83,73 +82,134 @@ export default function ShoppingView({ familyId, profile }) {
             }} />
           </div>
 
-          {/* Items */}
+          {/* Table */}
           <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-            {items.map(item => (
-              <button
-                key={item.id}
-                onClick={() => toggleChecked(item.id, item.checked, profile?.icon)}
-                style={{
-                  width: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 'var(--sp-3)',
-                  padding: 'var(--sp-3) var(--sp-4)',
-                  borderBottom: '1px solid var(--border-subtle)',
-                  background: item.checked ? 'var(--bg-elevated)' : 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  transition: 'background var(--t-fast)',
-                }}
-              >
-                {/* Checkbox */}
-                <div style={{
-                  width: 22, height: 22,
-                  borderRadius: 6,
-                  border: `2px solid ${item.checked ? 'var(--accent)' : 'var(--border)'}`,
-                  background: item.checked ? 'var(--accent)' : 'transparent',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0,
-                  transition: 'all var(--t-fast)',
-                }}>
-                  {item.checked && (
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                  )}
-                </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                  <th style={{ ...thBase, width: 32 }} />
+                  <Th label="Item" col="name" sortBy={sortBy} onSort={setSortBy} />
+                  <Th label="Category" col="category" sortBy={sortBy} onSort={setSortBy} style={{ width: 88 }} />
+                  <th style={{ ...thBase, width: 36, textAlign: 'right' }}>Qty</th>
+                  <th style={{ ...thBase, width: 30 }} />
+                </tr>
+              </thead>
+              <tbody>
+                {groups.map(({ key, items: groupItems }) => (
+                  <>
+                    {key && (
+                      <tr key={`hdr-${key}`}>
+                        <td colSpan={5} style={categoryHeaderStyle}>{key}</td>
+                      </tr>
+                    )}
+                    {groupItems.map(item => (
+                      <tr
+                        key={item.id}
+                        onClick={() => toggleChecked(item.id, item.checked, profile?.icon)}
+                        style={{
+                          borderBottom: '1px solid var(--border-subtle)',
+                          background: item.checked ? 'var(--bg-elevated)' : 'transparent',
+                          cursor: 'pointer',
+                          transition: 'background var(--t-fast)',
+                        }}
+                      >
+                        {/* Checkbox */}
+                        <td style={{ padding: '8px 0 8px var(--sp-3)', width: 32 }}>
+                          <div style={{
+                            width: 20, height: 20, borderRadius: 5,
+                            border: `2px solid ${item.checked ? 'var(--accent)' : 'var(--border)'}`,
+                            background: item.checked ? 'var(--accent)' : 'transparent',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            transition: 'all var(--t-fast)',
+                          }}>
+                            {item.checked && (
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12"/>
+                              </svg>
+                            )}
+                          </div>
+                        </td>
 
-                {/* Name + unit */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{
-                    fontSize: 15,
-                    fontWeight: 500,
-                    color: item.checked ? 'var(--text-muted)' : 'var(--text-primary)',
-                    textDecoration: item.checked ? 'line-through' : 'none',
-                    transition: 'color var(--t-fast)',
-                  }}>
-                    {item.item_name}
-                  </span>
-                  {item.unit && (
-                    <span style={{ fontSize: 13, color: 'var(--text-muted)', marginLeft: 5 }}>
-                      /{item.unit}
-                    </span>
-                  )}
-                </div>
+                        {/* Name + unit */}
+                        <td style={{ padding: '8px var(--sp-2)' }}>
+                          <span style={{
+                            fontSize: 14, fontWeight: 500,
+                            color: item.checked ? 'var(--text-muted)' : 'var(--text-primary)',
+                            textDecoration: item.checked ? 'line-through' : 'none',
+                            transition: 'color var(--t-fast)',
+                          }}>
+                            {item.item_name}
+                          </span>
+                          {item.unit && (
+                            <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 4 }}>/{item.unit}</span>
+                          )}
+                        </td>
 
-                {/* Quantity + checker icon */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)', flexShrink: 0 }}>
-                  <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>×{item.quantity}</span>
-                  {item.checked && (
-                    <UserAvatar icon={item.checked_by_icon} email="" size={24} />
-                  )}
-                </div>
-              </button>
-            ))}
+                        {/* Category */}
+                        <td style={{ padding: '8px var(--sp-2)', fontSize: 12, color: 'var(--text-muted)' }}>
+                          {item.category || '—'}
+                        </td>
+
+                        {/* Qty */}
+                        <td style={{ padding: '8px var(--sp-2)', fontSize: 13, color: 'var(--text-muted)', textAlign: 'right' }}>
+                          ×{item.quantity}
+                        </td>
+
+                        {/* Checker avatar */}
+                        <td style={{ padding: '8px var(--sp-2) 8px var(--sp-1)', width: 30 }}>
+                          {item.checked && (
+                            <UserAvatar icon={item.checked_by_icon} email="" size={22} />
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </>
+                ))}
+              </tbody>
+            </table>
           </div>
         </>
       )}
     </div>
   )
+}
+
+function Th({ label, col, sortBy, onSort, style }) {
+  const active = sortBy === col
+  return (
+    <th
+      onClick={() => onSort(col)}
+      style={{
+        ...thBase,
+        cursor: 'pointer',
+        userSelect: 'none',
+        color: active ? 'var(--accent)' : 'var(--text-muted)',
+        ...style,
+      }}
+    >
+      {label}
+      <span style={{ marginLeft: 3, opacity: active ? 1 : 0 }}>▾</span>
+    </th>
+  )
+}
+
+const thBase = {
+  padding: '6px var(--sp-2) 6px var(--sp-3)',
+  fontSize: 11,
+  fontWeight: 600,
+  color: 'var(--text-muted)',
+  textTransform: 'uppercase',
+  letterSpacing: '0.06em',
+  textAlign: 'left',
+}
+
+const categoryHeaderStyle = {
+  padding: '5px var(--sp-3) 4px',
+  fontSize: 11,
+  fontWeight: 700,
+  color: 'var(--text-muted)',
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+  background: 'var(--bg-elevated)',
+  borderBottom: '1px solid var(--border)',
 }
