@@ -1,7 +1,36 @@
+import { useState } from 'react'
 import Header from '../layout/Header'
 import ListItem from './ListItem'
 import ListSummary from './ListSummary'
 import SendButton from './SendButton'
+
+function SaveButton({ onSave }) {
+  const [state, setState] = useState('idle')
+
+  async function handle() {
+    setState('loading')
+    await onSave()
+    setState('success')
+    setTimeout(() => setState('idle'), 2000)
+  }
+
+  return (
+    <button
+      className="btn btn-ghost"
+      style={{ height: 42, padding: '0 var(--sp-3)', fontSize: 14, flexShrink: 0 }}
+      onClick={handle}
+      disabled={state !== 'idle'}
+    >
+      {state === 'loading' && <span className="spinner" />}
+      {state === 'success' && (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      )}
+      {state === 'idle' && 'Save'}
+    </button>
+  )
+}
 
 export default function ListView({ listState, onGoToCatalog, telegramChatId }) {
   const { items, loading, removeItem, updateQty, markSent, list } = listState
@@ -19,12 +48,15 @@ export default function ListView({ listState, onGoToCatalog, telegramChatId }) {
           flexDirection: 'column',
           gap: 'var(--sp-2)',
         }}>
-          <SendButton
-            items={items}
-            listName={list?.name || 'Shopping List'}
-            onSent={markSent}
-            chatId={telegramChatId}
-          />
+          <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
+            <SendButton
+              items={items}
+              listName={list?.name || 'Shopping List'}
+              onSent={markSent}
+              chatId={telegramChatId}
+            />
+            <SaveButton onSave={markSent} />
+          </div>
           <ListSummary items={items} />
         </div>
       )}

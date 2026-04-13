@@ -19,7 +19,7 @@ function Spinner() {
 }
 
 function ProfileGate({ user }) {
-  const { profile, members, loading, setFamily, updateTelegramChatId } = useProfile(user.id)
+  const { profile, members, loading, setFamily, updateTelegramChatId, updateIcon } = useProfile(user.id)
 
   if (loading) return <Spinner />
   if (!profile?.family_id) return <FamilyPicker setFamily={setFamily} />
@@ -30,6 +30,7 @@ function ProfileGate({ user }) {
       profile={profile}
       members={members}
       updateTelegramChatId={updateTelegramChatId}
+      updateIcon={updateIcon}
     />
   )
 }

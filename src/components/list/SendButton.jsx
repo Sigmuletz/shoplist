@@ -27,7 +27,7 @@ export default function SendButton({ items, listName, onSent, chatId }) {
       <button
         className="btn btn-primary"
         style={{
-          width: '100%',
+          flex: 1,
           fontSize: 14,
           height: 42,
           background: isSuccess ? 'var(--accent)' : undefined,

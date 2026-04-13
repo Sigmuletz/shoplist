@@ -9,7 +9,7 @@ export function useProfile(userId) {
     if (!familyId) { setMembers([]); return }
     const { data } = await supabase
       .from('profiles')
-      .select('id, email')
+      .select('id, email, icon')
       .eq('family_id', familyId)
     setMembers(data || [])
   }, [])
@@ -75,12 +75,19 @@ export function useProfile(userId) {
     setProfile(prev => ({ ...prev, telegram_chat_id: value }))
   }
 
+  async function updateIcon(icon) {
+    await supabase.from('profiles').update({ icon }).eq('id', userId)
+    setProfile(prev => ({ ...prev, icon }))
+    setMembers(prev => prev.map(m => m.id === userId ? { ...m, icon } : m))
+  }
+
   return {
     profile,
     members,
     loading: profile === undefined,
     setFamily,
     updateTelegramChatId,
+    updateIcon,
     refetch: fetchProfile,
   }
 }

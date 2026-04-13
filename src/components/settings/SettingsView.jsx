@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import Header from '../layout/Header'
-import PriceEditor from './PriceEditor'
 import { useAuth } from '../../hooks/useAuth'
 
 function PasswordSection({ setPassword }) {
@@ -93,7 +92,56 @@ function SectionLabel({ children }) {
   )
 }
 
-export default function SettingsView({ user, profile, members, catalog, updateTelegramChatId }) {
+const FOOD_ICONS = [
+  '🍎','🍊','🍋','🍇','🍓','🍒','🥝','🍑',
+  '🥑','🥕','🌽','🧅','🧄','🥦','🍄','🌶️',
+  '🧀','🥚','🍕','🍔','🌮','🍗','🥩','🍜',
+  '🍣','🍱','🥗','🍰','🍩','🍪','🧁','☕',
+]
+
+function IconPicker({ current, onPick }) {
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--sp-2)' }}>
+      {FOOD_ICONS.map(icon => (
+        <button
+          key={icon}
+          onClick={() => onPick(icon)}
+          style={{
+            width: 44, height: 44,
+            borderRadius: 'var(--r-md)',
+            fontSize: 22,
+            border: `2px solid ${current === icon ? 'var(--accent)' : 'transparent'}`,
+            background: current === icon ? 'var(--accent-dim)' : 'var(--bg-elevated)',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'border-color var(--t-fast), background var(--t-fast)',
+          }}
+        >
+          {icon}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+export function UserAvatar({ icon, email, size = 28 }) {
+  return (
+    <span style={{
+      width: size, height: size, borderRadius: '50%',
+      background: 'var(--bg-elevated)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: icon ? size * 0.6 : size * 0.45,
+      fontWeight: icon ? 'normal' : 600,
+      color: 'var(--text-secondary)',
+      flexShrink: 0,
+      lineHeight: 1,
+    }}>
+      {icon || (email?.[0] ?? '?').toUpperCase()}
+    </span>
+  )
+}
+
+export default function SettingsView({ user, profile, members, updateTelegramChatId, updateIcon }) {
   const { signOut, setPassword } = useAuth()
   const [signingOut, setSigningOut] = useState(false)
 
@@ -110,6 +158,18 @@ export default function SettingsView({ user, profile, members, catalog, updateTe
         flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch',
         padding: 'var(--sp-4)', display: 'flex', flexDirection: 'column', gap: 'var(--sp-6)',
       }}>
+
+        {/* Icon */}
+        <section>
+          <SectionLabel>Your icon</SectionLabel>
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
+              <UserAvatar icon={profile?.icon} email={user.email} size={44} />
+              <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Pick a food icon to represent you.</p>
+            </div>
+            <IconPicker current={profile?.icon} onPick={updateIcon} />
+          </div>
+        </section>
 
         {/* Family */}
         <section>
@@ -132,15 +192,7 @@ export default function SettingsView({ user, profile, members, catalog, updateTe
                       borderBottom: '1px solid var(--border-subtle)',
                       fontSize: 14,
                     }}>
-                      <span style={{
-                        width: 28, height: 28, borderRadius: '50%',
-                        background: 'var(--bg-elevated)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)',
-                        flexShrink: 0,
-                      }}>
-                        {(m.email?.[0] ?? '?').toUpperCase()}
-                      </span>
+                      <UserAvatar icon={m.icon} email={m.email} size={28} />
                       <span style={{ color: m.id === user.id ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
                         {m.email ?? m.id}
                         {m.id === user.id && <span style={{ color: 'var(--text-muted)', fontSize: 12, marginLeft: 6 }}>you</span>}
@@ -181,18 +233,6 @@ export default function SettingsView({ user, profile, members, catalog, updateTe
           <SectionLabel>Password</SectionLabel>
           <div className="card">
             <PasswordSection setPassword={setPassword} />
-          </div>
-        </section>
-
-        {/* Prices */}
-        <section>
-          <SectionLabel>Item Prices</SectionLabel>
-          <div className="card">
-            {catalog.loading ? (
-              <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Loading…</p>
-            ) : (
-              <PriceEditor items={catalog.items} userId={user.id} onRefetch={catalog.refetch} />
-            )}
           </div>
         </section>
 

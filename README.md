@@ -1,16 +1,79 @@
-# React + Vite
+# Shoplist
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Mobile-first family shopping list app. Dark mode. Shared catalog and lists per family. Telegram delivery.
 
-Currently, two official plugins are available:
+## Local Development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Two processes required: Vite dev server (frontend) and a local API server that shims the Vercel serverless functions.
 
-## React Compiler
+### 1. Environment
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Create `.env.local` in the project root:
 
-## Expanding the ESLint configuration
+```
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+TELEGRAM_BOT_TOKEN=your-bot-token
+TELEGRAM_CHAT_ID=your-fallback-chat-id   # optional fallback
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 2. Install dependencies
+
+```bash
+npm install
+```
+
+### 3. Start the API server
+
+Runs on port 3001 and handles `/api/*` requests (Telegram send, etc.):
+
+```bash
+node --env-file=.env.local dev-api.js
+```
+
+### 4. Start the frontend
+
+In a separate terminal:
+
+```bash
+npm run dev
+```
+
+Vite proxies `/api/` requests to `localhost:3001` automatically.
+
+App is available at `http://localhost:5173`.
+
+## Stack
+
+- **Frontend**: React + Vite
+- **Database / Auth**: Supabase (PostgreSQL + RLS)
+- **Hosting**: Vercel (static site + serverless `api/` functions)
+- **Notifications**: Telegram Bot API
+
+## Deployment
+
+Push to `main` — Vercel auto-deploys. Set the same env vars (minus `VITE_` prefix ones go in Vercel env, `VITE_` ones too) in the Vercel project settings.
+
+## Ingredients.
+apples
+bananas
+bread
+butter
+carrots
+cheddar
+cheese
+chicken_breast
+eggs
+garlic
+ground_beef
+iaurt
+milk
+oats
+olive_oil
+onions
+pasta
+rice
+spinach
+tomatoes
+tuna

@@ -2,11 +2,13 @@ import { useState } from 'react'
 import TabBar from './TabBar'
 import CatalogView from '../catalog/CatalogView'
 import ListView from '../list/ListView'
+import ShoppingView from '../shopping/ShoppingView'
+import HistoryView from '../history/HistoryView'
 import SettingsView from '../settings/SettingsView'
 import { useCatalog } from '../../hooks/useCatalog'
 import { useList } from '../../hooks/useList'
 
-export default function AppShell({ user, profile, members, updateTelegramChatId }) {
+export default function AppShell({ user, profile, members, updateTelegramChatId, updateIcon }) {
   const [activeTab, setActiveTab] = useState('catalog')
 
   const catalog = useCatalog(profile.family_id)
@@ -21,13 +23,22 @@ export default function AppShell({ user, profile, members, updateTelegramChatId 
         telegramChatId={profile.telegram_chat_id}
       />
     ),
+    shopping: <ShoppingView familyId={profile.family_id} profile={profile} />,
+    history: (
+      <HistoryView
+        familyId={profile.family_id}
+        listState={listState}
+        onGoToList={() => setActiveTab('list')}
+        chatId={profile.telegram_chat_id}
+      />
+    ),
     settings: (
       <SettingsView
         user={user}
         profile={profile}
         members={members}
-        catalog={catalog}
         updateTelegramChatId={updateTelegramChatId}
+        updateIcon={updateIcon}
       />
     ),
   }
