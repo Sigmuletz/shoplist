@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { CATEGORIES } from '../../lib/categories'
 
-export default function AddItemModal({ onAdd, onClose }) {
+export default function AddItemModal({ onAdd, onClose, existingCategories = [] }) {
   const [name, setName] = useState('')
   const [unit, setUnit] = useState('')
   const [price, setPrice] = useState('')
   const [category, setCategory] = useState('')
+  const [isStaple, setIsStaple] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -15,7 +15,7 @@ export default function AddItemModal({ onAdd, onClose }) {
     setLoading(true)
     setError(null)
     try {
-      await onAdd({ name, unit, price: price !== '' ? price : null, category: category || null })
+      await onAdd({ name, unit, price: price !== '' ? price : null, category: category.trim() || null, is_staple: isStaple })
       onClose()
     } catch (err) {
       setError(err.message)
@@ -65,33 +65,56 @@ export default function AddItemModal({ onAdd, onClose }) {
             </div>
             <div>
               <label className="label">Category (optional)</label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--sp-1)', marginBottom: 'var(--sp-2)' }}>
-                {CATEGORIES.map(c => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setCategory(category === c ? '' : c)}
-                    style={{
-                      padding: '3px 10px',
-                      borderRadius: 99,
-                      fontSize: 13,
-                      border: `1.5px solid ${category === c ? 'var(--accent)' : 'var(--border)'}`,
-                      background: category === c ? 'var(--accent-dim)' : 'transparent',
-                      color: category === c ? 'var(--accent)' : 'var(--text-secondary)',
-                      cursor: 'pointer',
-                      transition: 'all var(--t-fast)',
-                    }}
-                  >
-                    {c}
+              {existingCategories.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--sp-1)', marginBottom: 'var(--sp-2)' }}>
+                  <button type="button" onClick={() => setCategory('')} style={chipStyle(category === '')}>
+                    None
                   </button>
-                ))}
-              </div>
+                  {existingCategories.map(c => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setCategory(category === c ? '' : c)}
+                      style={chipStyle(category === c)}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              )}
               <input
                 className="input"
+                list="add-cat-opts"
                 value={category}
                 onChange={e => setCategory(e.target.value)}
-                placeholder="or type custom…"
+                placeholder="None — or type a new category"
               />
+              <datalist id="add-cat-opts">
+                {existingCategories.map(c => <option key={c} value={c} />)}
+              </datalist>
+            </div>
+            <div>
+              <label style={{
+                display: 'flex', alignItems: 'center', gap: 'var(--sp-2)',
+                cursor: 'pointer', fontSize: 14,
+              }}>
+                <button
+                  type="button"
+                  onClick={() => setIsStaple(s => !s)}
+                  style={{
+                    width: 28, height: 28, borderRadius: 'var(--r-sm)',
+                    background: isStaple ? 'var(--accent-dim)' : 'var(--bg-elevated)',
+                    color: isStaple ? 'var(--accent)' : 'var(--text-muted)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 15, flexShrink: 0,
+                  }}
+                >
+                  ★
+                </button>
+                <span style={{ color: isStaple ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                  Staple item (always buy)
+                </span>
+              </label>
             </div>
             {error && <p style={{ color: 'var(--danger)', fontSize: 13 }}>{error}</p>}
           </div>
@@ -105,4 +128,17 @@ export default function AddItemModal({ onAdd, onClose }) {
       </div>
     </div>
   )
+}
+
+function chipStyle(active) {
+  return {
+    padding: '3px 10px',
+    borderRadius: 99,
+    fontSize: 13,
+    border: `1.5px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
+    background: active ? 'var(--accent-dim)' : 'transparent',
+    color: active ? 'var(--accent)' : 'var(--text-secondary)',
+    cursor: 'pointer',
+    transition: 'all var(--t-fast)',
+  }
 }

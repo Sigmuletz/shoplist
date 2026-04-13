@@ -22,7 +22,8 @@ export function formatList(items, listName = 'Shopping List') {
       priceStr = ` — ${formatCurrency(linePrice, item.currency)}`
     }
 
-    return `• ${item.item_name}${unit}${qty}${priceStr}`
+    const note = item.note ? ` _(${item.note})_` : ''
+    return `• ${item.item_name}${unit}${qty}${priceStr}${note}`
   })
 
   let msg = `*${listName}*\n\n${lines.join('\n')}`

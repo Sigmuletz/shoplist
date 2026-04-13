@@ -32,8 +32,8 @@ function SaveButton({ onSave }) {
   )
 }
 
-export default function ListView({ listState, onGoToCatalog, telegramChatId }) {
-  const { items, loading, removeItem, updateQty, markSent, list } = listState
+export default function ListView({ listState, catalog, onGoToCatalog, telegramChatId }) {
+  const { items, loading, removeItem, updateQty, markSent, updateNote, addStaples, list } = listState
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -49,6 +49,16 @@ export default function ListView({ listState, onGoToCatalog, telegramChatId }) {
           gap: 'var(--sp-2)',
         }}>
           <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
+            {catalog && catalog.items.some(i => i.is_staple) && (
+              <button
+                className="btn btn-ghost"
+                style={{ height: 42, padding: '0 var(--sp-3)', fontSize: 14, flexShrink: 0 }}
+                onClick={() => addStaples(catalog.items)}
+                title="Add staple items"
+              >
+                ★
+              </button>
+            )}
             <SendButton
               items={items}
               listName={list?.name || 'Shopping List'}
@@ -75,11 +85,16 @@ export default function ListView({ listState, onGoToCatalog, telegramChatId }) {
               <circle cx="3.5" cy="18" r="1.5" fill="currentColor" stroke="none"/>
             </svg>
             <p>List is empty.</p>
-            <button className="btn btn-primary" onClick={onGoToCatalog}>Browse catalog</button>
+            <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
+              {catalog && catalog.items.some(i => i.is_staple) && (
+                <button className="btn btn-ghost" onClick={() => addStaples(catalog.items)}>★ Staples</button>
+              )}
+              <button className="btn btn-primary" onClick={onGoToCatalog}>Browse catalog</button>
+            </div>
           </div>
         ) : (
           items.map(item => (
-            <ListItem key={item.id} item={item} onRemove={removeItem} onUpdateQty={updateQty} />
+            <ListItem key={item.id} item={item} onRemove={removeItem} onUpdateQty={updateQty} onUpdateNote={updateNote} />
           ))
         )}
       </div>

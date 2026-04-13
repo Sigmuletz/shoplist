@@ -3,7 +3,7 @@ import Header from '../layout/Header'
 import SearchBar from './SearchBar'
 import AddItemModal from './AddItemModal'
 import BulkAddModal from './BulkAddModal'
-import { CATEGORIES, groupByCategory } from '../../lib/categories'
+import { groupByCategory } from '../../lib/categories'
 
 export default function CatalogView({ catalog, listState }) {
   const [search, setSearch] = useState('')
@@ -23,7 +23,7 @@ export default function CatalogView({ catalog, listState }) {
   function enterEdit() {
     const initial = {}
     catalog.items.forEach(i => {
-      initial[i.id] = { name: i.name, unit: i.unit || '', price: i.price ?? '', category: i.category || '' }
+      initial[i.id] = { name: i.name, unit: i.unit || '', price: i.price ?? '', category: i.category || '', is_staple: !!i.is_staple }
     })
     setEdits(initial)
     setEditMode(true)
@@ -38,12 +38,14 @@ export default function CatalogView({ catalog, listState }) {
         e.name !== item.name ||
         e.unit !== (item.unit || '') ||
         String(e.price) !== String(item.price ?? '') ||
-        e.category !== (item.category || '')
+        e.category !== (item.category || '') ||
+        !!e.is_staple !== !!item.is_staple
       if (changed && e.name.trim()) {
         await catalog.updateItem(item.id, {
           name: e.name, unit: e.unit,
           price: e.price !== '' ? e.price : null,
           category: e.category || null,
+          is_staple: !!e.is_staple,
         })
       }
     }
@@ -64,6 +66,8 @@ export default function CatalogView({ catalog, listState }) {
   function toggleSort(col) {
     setSortBy(col)
   }
+
+  const existingCategories = [...new Set(catalog.items.map(i => i.category).filter(Boolean))].sort()
 
   const filtered = catalog.items.filter(i =>
     i.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -139,6 +143,7 @@ export default function CatalogView({ catalog, listState }) {
                   listState={listState}
                   setField={setField}
                   handleDelete={handleDelete}
+                  existingCategories={existingCategories}
                 />
               ))}
             </tbody>
@@ -146,7 +151,7 @@ export default function CatalogView({ catalog, listState }) {
         )}
       </div>
 
-      {showAdd && <AddItemModal onAdd={handleAdd} onClose={() => setShowAdd(false)} />}
+      {showAdd && <AddItemModal onAdd={handleAdd} onClose={() => setShowAdd(false)} existingCategories={existingCategories} />}
       {showBulk && <BulkAddModal onAdd={handleAdd} onClose={() => setShowBulk(false)} />}
     </div>
   )
@@ -171,7 +176,7 @@ function Th({ label, col, sortBy, onSort, style }) {
   )
 }
 
-function GroupRows({ groupKey, items, colSpan, editMode, edits, listState, setField, handleDelete }) {
+function GroupRows({ groupKey, items, colSpan, editMode, edits, listState, setField, handleDelete, existingCategories }) {
   return (
     <>
       {groupKey && (
@@ -184,9 +189,10 @@ function GroupRows({ groupKey, items, colSpan, editMode, edits, listState, setFi
           <EditRow
             key={item.id}
             item={item}
-            values={edits[item.id] || { name: item.name, unit: item.unit || '', price: item.price ?? '', category: item.category || '' }}
+            values={edits[item.id] || { name: item.name, unit: item.unit || '', price: item.price ?? '', category: item.category || '', is_staple: !!item.is_staple }}
             onChange={(field, val) => setField(item.id, field, val)}
             onDelete={() => handleDelete(item.id)}
+            existingCategories={existingCategories}
           />
         ) : (
           <ViewRow
@@ -244,7 +250,10 @@ function ViewRow({ item, inList, onAdd }) {
       background: inList ? 'var(--accent-dim)' : 'transparent',
       transition: 'background var(--t-fast)',
     }}>
-      <td style={{ padding: '7px var(--sp-2) 7px var(--sp-3)', fontSize: 14, fontWeight: 500 }}>{item.name}</td>
+      <td style={{ padding: '7px var(--sp-2) 7px var(--sp-3)', fontSize: 14, fontWeight: 500 }}>
+        {item.is_staple && <span style={{ color: 'var(--accent)', marginRight: 5, fontSize: 12 }}>★</span>}
+        {item.name}
+      </td>
       <td style={{ padding: '7px var(--sp-2)', fontSize: 12, color: 'var(--text-muted)' }}>{item.category || '—'}</td>
       <td style={{ padding: '7px var(--sp-2)', fontSize: 13, color: 'var(--text-muted)', textAlign: 'center' }}>{item.unit || '—'}</td>
       <td style={{ padding: '7px var(--sp-3)', fontSize: 13, color: 'var(--text-secondary)', textAlign: 'right' }}>{priceStr}</td>
@@ -275,7 +284,7 @@ function ViewRow({ item, inList, onAdd }) {
   )
 }
 
-function EditRow({ item, values, onChange, onDelete }) {
+function EditRow({ item, values, onChange, onDelete, existingCategories }) {
   return (
     <tr style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)' }}>
       <td style={{ padding: '5px var(--sp-2) 5px var(--sp-3)' }}>
@@ -284,13 +293,13 @@ function EditRow({ item, values, onChange, onDelete }) {
       <td style={{ padding: '5px var(--sp-1)' }}>
         <input
           style={cellInput}
-          list="category-options"
+          list="cat-opts"
           value={values.category}
           onChange={e => onChange('category', e.target.value)}
-          placeholder="—"
+          placeholder="None"
         />
-        <datalist id="category-options">
-          {CATEGORIES.map(c => <option key={c} value={c} />)}
+        <datalist id="cat-opts">
+          {existingCategories.map(c => <option key={c} value={c} />)}
         </datalist>
       </td>
       <td style={{ padding: '5px var(--sp-1)' }}>
@@ -311,20 +320,35 @@ function EditRow({ item, values, onChange, onDelete }) {
         />
       </td>
       <td style={{ padding: '5px var(--sp-2) 5px var(--sp-1)' }}>
-        <button
-          onClick={onDelete}
-          style={{
-            width: 28, height: 28, borderRadius: 'var(--r-sm)',
-            background: 'var(--danger-dim)', color: 'var(--danger)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-            <path d="M10 11v6M14 11v6"/>
-          </svg>
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center' }}>
+          <button
+            onClick={() => onChange('is_staple', !values.is_staple)}
+            title="Toggle staple"
+            style={{
+              width: 28, height: 28, borderRadius: 'var(--r-sm)',
+              background: values.is_staple ? 'var(--accent-dim)' : 'var(--bg-elevated)',
+              color: values.is_staple ? 'var(--accent)' : 'var(--text-muted)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 14,
+            }}
+          >
+            ★
+          </button>
+          <button
+            onClick={onDelete}
+            style={{
+              width: 28, height: 28, borderRadius: 'var(--r-sm)',
+              background: 'var(--danger-dim)', color: 'var(--danger)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+              <path d="M10 11v6M14 11v6"/>
+            </svg>
+          </button>
+        </div>
       </td>
     </tr>
   )

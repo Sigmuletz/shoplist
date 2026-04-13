@@ -89,7 +89,19 @@ export function useList(familyId) {
     setItems([])
   }
 
+  async function updateNote(listItemId, text) {
+    await supabase.from('list_items').update({ note: text || null }).eq('id', listItemId)
+    setItems(prev => prev.map(i => i.id === listItemId ? { ...i, note: text || null } : i))
+  }
+
+  async function addStaples(catalogItems) {
+    const staples = (catalogItems || []).filter(i => i.is_staple)
+    for (const item of staples) {
+      await addItem(item.id)
+    }
+  }
+
   const isInList = (catalogItemId) => items.some(i => i.catalog_item_id === catalogItemId)
 
-  return { list, items, loading, addItem, removeItem, updateQty, markSent, clearList, isInList }
+  return { list, items, loading, addItem, removeItem, updateQty, markSent, clearList, updateNote, addStaples, isInList }
 }

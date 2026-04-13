@@ -143,6 +143,9 @@ export default function ShoppingView({ familyId, profile }) {
                           {item.unit && (
                             <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 4 }}>/{item.unit}</span>
                           )}
+                          {item.note && (
+                            <span style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 1 }}>{item.note}</span>
+                          )}
                         </td>
 
                         {/* Category */}

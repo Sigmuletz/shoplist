@@ -19,6 +19,7 @@ export default function AppShell({ user, profile, members, updateTelegramChatId,
     list: (
       <ListView
         listState={listState}
+        catalog={catalog}
         onGoToCatalog={() => setActiveTab('catalog')}
         telegramChatId={profile.telegram_chat_id}
       />

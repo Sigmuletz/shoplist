@@ -22,7 +22,7 @@ export function useCatalog(familyId) {
     fetchItems()
   }, [fetchItems])
 
-  async function addItem({ name, unit, price, currency = 'RON', category }) {
+  async function addItem({ name, unit, price, currency = 'RON', category, is_staple = false }) {
     const { data: item, error } = await supabase
       .from('catalog_items')
       .insert({
@@ -32,6 +32,7 @@ export function useCatalog(familyId) {
         price: price != null && price !== '' ? parseFloat(price) : null,
         currency,
         category: category?.trim() || null,
+        is_staple: !!is_staple,
       })
       .select()
       .single()
@@ -45,7 +46,7 @@ export function useCatalog(familyId) {
     return item
   }
 
-  async function updateItem(id, { name, unit, price, currency = 'RON', category }) {
+  async function updateItem(id, { name, unit, price, currency = 'RON', category, is_staple = false }) {
     const { error } = await supabase
       .from('catalog_items')
       .update({
@@ -54,6 +55,7 @@ export function useCatalog(familyId) {
         price: price != null && price !== '' ? parseFloat(price) : null,
         currency,
         category: category?.trim() || null,
+        is_staple: !!is_staple,
       })
       .eq('id', id)
     if (error) throw error
