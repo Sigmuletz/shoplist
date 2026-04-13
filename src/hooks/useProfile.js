@@ -3,9 +3,24 @@ import { supabase } from '../lib/supabase'
 
 export function useProfile(userId) {
   const [profile, setProfile] = useState(undefined) // undefined = loading
+  const [members, setMembers] = useState([])
+
+  const fetchMembers = useCallback(async (familyId) => {
+    if (!familyId) { setMembers([]); return }
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, email')
+      .eq('family_id', familyId)
+    setMembers(data || [])
+  }, [])
 
   const fetchProfile = useCallback(async () => {
     if (!userId) return
+
+    // Get email from auth
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    const email = authUser?.email
+
     const { data } = await supabase
       .from('profiles')
       .select('*, families(name)')
@@ -14,12 +29,20 @@ export function useProfile(userId) {
 
     if (!data) {
       // New user — create profile row
-      await supabase.from('profiles').insert({ id: userId })
-      setProfile({ id: userId, family_id: null, telegram_chat_id: null, families: null })
+      await supabase.from('profiles').insert({ id: userId, email })
+      const profile = { id: userId, family_id: null, telegram_chat_id: null, families: null, email }
+      setProfile(profile)
+      setMembers([])
     } else {
+      // Sync email if changed
+      if (email && data.email !== email) {
+        await supabase.from('profiles').update({ email }).eq('id', userId)
+        data.email = email
+      }
       setProfile(data)
+      fetchMembers(data.family_id)
     }
-  }, [userId])
+  }, [userId, fetchMembers])
 
   useEffect(() => {
     fetchProfile()
@@ -28,6 +51,7 @@ export function useProfile(userId) {
   async function setFamily(familyId) {
     await supabase.from('profiles').update({ family_id: familyId }).eq('id', userId)
     await fetchProfile()
+    await fetchMembers(familyId)
   }
 
   async function updateTelegramChatId(chatId) {
@@ -38,6 +62,7 @@ export function useProfile(userId) {
 
   return {
     profile,
+    members,
     loading: profile === undefined,
     setFamily,
     updateTelegramChatId,

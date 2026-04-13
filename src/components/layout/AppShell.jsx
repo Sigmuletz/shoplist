@@ -6,7 +6,7 @@ import SettingsView from '../settings/SettingsView'
 import { useCatalog } from '../../hooks/useCatalog'
 import { useList } from '../../hooks/useList'
 
-export default function AppShell({ user, profile, updateTelegramChatId }) {
+export default function AppShell({ user, profile, members, updateTelegramChatId }) {
   const [activeTab, setActiveTab] = useState('catalog')
 
   const catalog = useCatalog(profile.family_id)
@@ -25,6 +25,7 @@ export default function AppShell({ user, profile, updateTelegramChatId }) {
       <SettingsView
         user={user}
         profile={profile}
+        members={members}
         catalog={catalog}
         updateTelegramChatId={updateTelegramChatId}
       />
