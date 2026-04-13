@@ -35,9 +35,12 @@ export function useCatalog(familyId) {
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {
+      if (error.code === '23505') return null // duplicate — skip
+      throw error
+    }
 
-    if (price != null && price !== '') {
+    if (item && price != null && price !== '') {
       const { data: { user } } = await supabase.auth.getUser()
       await supabase.from('item_prices').insert({
         user_id: user.id,
