@@ -18,7 +18,7 @@ export function useCatalog(familyId) {
       setItems(data.map(item => ({
         ...item,
         price: item.item_prices?.[0]?.price ?? null,
-        currency: item.item_prices?.[0]?.currency ?? 'EUR',
+        currency: item.item_prices?.[0]?.currency ?? 'RON',
       })))
     }
     setLoading(false)
@@ -28,7 +28,7 @@ export function useCatalog(familyId) {
     fetchItems()
   }, [fetchItems])
 
-  async function addItem({ name, unit, price, currency = 'EUR' }) {
+  async function addItem({ name, unit, price, currency = 'RON' }) {
     const { data: item, error } = await supabase
       .from('catalog_items')
       .insert({ family_id: familyId, name: name.trim(), unit: unit?.trim() || null })
@@ -51,10 +51,34 @@ export function useCatalog(familyId) {
     return item
   }
 
+  async function updateItem(id, { name, unit, price, currency = 'RON' }) {
+    const { error } = await supabase
+      .from('catalog_items')
+      .update({ name: name.trim(), unit: unit?.trim() || null })
+      .eq('id', id)
+    if (error) throw error
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (price != null && price !== '') {
+      await supabase.from('item_prices').upsert({
+        user_id: user.id,
+        catalog_item_id: id,
+        price: parseFloat(price),
+        currency,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,catalog_item_id' })
+    } else {
+      await supabase.from('item_prices').delete()
+        .eq('user_id', user.id).eq('catalog_item_id', id)
+    }
+
+    await fetchItems()
+  }
+
   async function deleteItem(id) {
     await supabase.from('catalog_items').delete().eq('id', id)
     setItems(prev => prev.filter(i => i.id !== id))
   }
 
-  return { items, loading, addItem, deleteItem, refetch: fetchItems }
+  return { items, loading, addItem, updateItem, deleteItem, refetch: fetchItems }
 }

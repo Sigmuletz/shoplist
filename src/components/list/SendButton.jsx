@@ -28,8 +28,8 @@ export default function SendButton({ items, listName, onSent, chatId }) {
         className="btn btn-primary"
         style={{
           width: '100%',
-          fontSize: 16,
-          height: 52,
+          fontSize: 14,
+          height: 42,
           background: isSuccess ? 'var(--accent)' : undefined,
         }}
         onClick={handleSend}

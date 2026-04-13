@@ -3,7 +3,7 @@ import QuantityStepper from './QuantityStepper'
 export default function ListItem({ item, onRemove, onUpdateQty }) {
   const linePrice = item.price != null ? item.price * item.quantity : null
   const priceStr = linePrice != null
-    ? new Intl.NumberFormat('en-US', { style: 'currency', currency: item.currency || 'EUR' }).format(linePrice)
+    ? new Intl.NumberFormat('ro-RO', { style: 'currency', currency: item.currency || 'RON' }).format(linePrice)
     : null
 
   return (
@@ -11,7 +11,7 @@ export default function ListItem({ item, onRemove, onUpdateQty }) {
       display: 'flex',
       alignItems: 'center',
       gap: 'var(--sp-3)',
-      padding: 'var(--sp-3) var(--sp-4)',
+      padding: 'var(--sp-2) var(--sp-3)',
       borderBottom: '1px solid var(--border-subtle)',
     }}>
       <div style={{ flex: 1, minWidth: 0 }}>

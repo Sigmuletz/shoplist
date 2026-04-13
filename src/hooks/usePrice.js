@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 export function usePrice(userId) {
   const timers = useRef({})
 
-  const updatePrice = useCallback((catalogItemId, price, currency = 'EUR') => {
+  const updatePrice = useCallback((catalogItemId, price, currency = 'RON') => {
     clearTimeout(timers.current[catalogItemId])
     timers.current[catalogItemId] = setTimeout(async () => {
       if (price === '' || price == null) {

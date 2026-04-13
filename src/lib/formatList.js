@@ -34,10 +34,10 @@ export function formatList(items, listName = 'Shopping List') {
   return msg
 }
 
-function formatCurrency(amount, currency = 'EUR') {
+function formatCurrency(amount, currency = 'RON') {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: currency || 'EUR',
+    currency: currency || 'RON',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount)

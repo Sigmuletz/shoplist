@@ -39,7 +39,7 @@ export function useList(familyId) {
       .from('list_items_detail')
       .select('*')
       .eq('list_id', listId)
-      .order('position')
+      .order('position', { ascending: false })
 
     setItems(data ?? [])
   }

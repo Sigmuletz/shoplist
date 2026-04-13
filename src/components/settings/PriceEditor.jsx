@@ -33,7 +33,7 @@ export default function PriceEditor({ items, userId, onRefetch }) {
             {item.unit && <span style={{ color: 'var(--text-muted)', fontSize: 13, marginLeft: 6 }}>/{item.unit}</span>}
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-1)' }}>
-            <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>€</span>
+            <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>RON</span>
             <input
               type="number"
               min="0"
