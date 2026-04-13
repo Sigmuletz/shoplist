@@ -3,7 +3,7 @@ import ListItem from './ListItem'
 import ListSummary from './ListSummary'
 import SendButton from './SendButton'
 
-export default function ListView({ listState, onGoToCatalog }) {
+export default function ListView({ listState, onGoToCatalog, telegramChatId }) {
   const { items, loading, removeItem, updateQty, markSent, list } = listState
 
   return (
@@ -50,6 +50,7 @@ export default function ListView({ listState, onGoToCatalog }) {
             items={items}
             listName={list?.name || 'Shopping List'}
             onSent={markSent}
+            chatId={telegramChatId}
           />
         </div>
       )}

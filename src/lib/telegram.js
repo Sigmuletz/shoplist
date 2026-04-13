@@ -1,7 +1,7 @@
 import { supabase } from './supabase'
 import { formatList } from './formatList'
 
-export async function sendList(items, listName) {
+export async function sendList(items, listName, chatId) {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) throw new Error('Not authenticated')
 
@@ -13,7 +13,7 @@ export async function sendList(items, listName) {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${session.access_token}`,
     },
-    body: JSON.stringify({ message }),
+    body: JSON.stringify({ message, chat_id: chatId }),
   })
 
   const json = await res.json()

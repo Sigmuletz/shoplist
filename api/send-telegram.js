@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
-const CHAT_ID = process.env.TELEGRAM_CHAT_ID
+const FALLBACK_CHAT_ID = process.env.TELEGRAM_CHAT_ID
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
@@ -25,13 +25,14 @@ export default async function handler(req, res) {
     return res.status(401).json({ ok: false, error: 'Invalid auth token' })
   }
 
-  const { message } = req.body
+  const { message, chat_id } = req.body
   if (!message || typeof message !== 'string') {
     return res.status(400).json({ ok: false, error: 'Missing message' })
   }
 
-  if (!BOT_TOKEN || !CHAT_ID) {
-    return res.status(500).json({ ok: false, error: 'Telegram not configured' })
+  const targetChatId = chat_id || FALLBACK_CHAT_ID
+  if (!BOT_TOKEN || !targetChatId) {
+    return res.status(400).json({ ok: false, error: 'No Telegram chat ID configured. Set it in Settings.' })
   }
 
   try {
@@ -41,7 +42,7 @@ export default async function handler(req, res) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          chat_id: CHAT_ID,
+          chat_id: targetChatId,
           text: message,
           parse_mode: 'Markdown',
         }),

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { sendList } from '../../lib/telegram'
 
-export default function SendButton({ items, listName, onSent }) {
+export default function SendButton({ items, listName, onSent, chatId }) {
   const [state, setState] = useState('idle') // idle | loading | success | error
   const [error, setError] = useState(null)
 
@@ -9,7 +9,7 @@ export default function SendButton({ items, listName, onSent }) {
     setState('loading')
     setError(null)
     try {
-      await sendList(items, listName)
+      await sendList(items, listName, chatId)
       setState('success')
       await onSent()
       setTimeout(() => setState('idle'), 2500)

@@ -1,20 +1,17 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
-export function useCatalog(userId) {
+export function useCatalog(familyId) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
 
   const fetchItems = useCallback(async () => {
-    if (!userId) return
+    if (!familyId) return
     setLoading(true)
     const { data, error } = await supabase
       .from('catalog_items')
-      .select(`
-        *,
-        item_prices (price, currency)
-      `)
-      .eq('user_id', userId)
+      .select(`*, item_prices (price, currency)`)
+      .eq('family_id', familyId)
       .order('name')
 
     if (!error) {
@@ -25,7 +22,7 @@ export function useCatalog(userId) {
       })))
     }
     setLoading(false)
-  }, [userId])
+  }, [familyId])
 
   useEffect(() => {
     fetchItems()
@@ -34,15 +31,16 @@ export function useCatalog(userId) {
   async function addItem({ name, unit, price, currency = 'EUR' }) {
     const { data: item, error } = await supabase
       .from('catalog_items')
-      .insert({ user_id: userId, name: name.trim(), unit: unit?.trim() || null })
+      .insert({ family_id: familyId, name: name.trim(), unit: unit?.trim() || null })
       .select()
       .single()
 
     if (error) throw error
 
     if (price != null && price !== '') {
+      const { data: { user } } = await supabase.auth.getUser()
       await supabase.from('item_prices').insert({
-        user_id: userId,
+        user_id: user.id,
         catalog_item_id: item.id,
         price: parseFloat(price),
         currency,

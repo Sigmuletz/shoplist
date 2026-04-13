@@ -1,20 +1,19 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
-export function useList(userId) {
-  const [list, setList] = useState(null)   // { id, name }
-  const [items, setItems] = useState([])   // list_items_detail rows
+export function useList(familyId) {
+  const [list, setList] = useState(null)
+  const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
 
   const fetchActiveList = useCallback(async () => {
-    if (!userId) return
+    if (!familyId) return
     setLoading(true)
 
-    // Get or create the active (unsent) list
     let { data: lists } = await supabase
       .from('shopping_lists')
       .select('id, name')
-      .eq('user_id', userId)
+      .eq('family_id', familyId)
       .is('sent_at', null)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -24,7 +23,7 @@ export function useList(userId) {
     if (!activeList) {
       const { data } = await supabase
         .from('shopping_lists')
-        .insert({ user_id: userId, name: 'Shopping List' })
+        .insert({ family_id: familyId, name: 'Shopping List' })
         .select()
         .single()
       activeList = data
@@ -33,7 +32,7 @@ export function useList(userId) {
     setList(activeList)
     await fetchItems(activeList.id)
     setLoading(false)
-  }, [userId])
+  }, [familyId])
 
   const fetchItems = async (listId) => {
     const { data } = await supabase
@@ -57,12 +56,11 @@ export function useList(userId) {
       return updateQty(existing.id, existing.quantity + 1)
     }
 
-    const position = items.length
     const { error } = await supabase.from('list_items').insert({
       list_id: list.id,
       catalog_item_id: catalogItemId,
       quantity: 1,
-      position,
+      position: items.length,
     })
 
     if (!error) await fetchItems(list.id)
@@ -75,7 +73,6 @@ export function useList(userId) {
 
   async function updateQty(listItemId, qty) {
     if (qty < 1) return removeItem(listItemId)
-
     await supabase.from('list_items').update({ quantity: qty }).eq('id', listItemId)
     setItems(prev => prev.map(i => i.id === listItemId ? { ...i, quantity: qty } : i))
   }
@@ -83,7 +80,6 @@ export function useList(userId) {
   async function markSent() {
     if (!list) return
     await supabase.from('shopping_lists').update({ sent_at: new Date().toISOString() }).eq('id', list.id)
-    // Create a fresh list
     await fetchActiveList()
   }
 
