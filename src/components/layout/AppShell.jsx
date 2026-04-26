@@ -50,7 +50,7 @@ export default function AppShell({ user, profile, members, updateTelegramChatId,
       <div className="shell-portrait" style={{
         display: 'flex',
         flexDirection: 'column',
-        height: '100%',
+        height: '100dvh',
       }}>
         <main style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           {view[activeTab]}
@@ -66,7 +66,7 @@ export default function AppShell({ user, profile, members, updateTelegramChatId,
       <div className="shell-landscape" style={{
         display: 'none',
         flexDirection: 'row',
-        height: '100%',
+        height: '100dvh',
       }}>
         <TabBar
           active={activeTab}
